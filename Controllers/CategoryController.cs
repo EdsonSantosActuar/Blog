@@ -1,5 +1,6 @@
 using Blog.Data;
 using Blog.Models;
+using Blog.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,8 +12,16 @@ public class CategoryController : ControllerBase
     [HttpGet("v1/categories")]
     public async Task<IActionResult> GetAsync([FromServices] BlogDataContext context)
     {
-        var categories = await context.Categories.ToListAsync();
-        return Ok(categories);
+        try
+        {
+            var categories = await context.Categories.ToListAsync();
+            return Ok(new ResultViewModel<List<Category>>(categories));
+        }
+        catch
+        {
+            return StatusCode(500, new ResultViewModel<List<Category>>("05X01 - Um erro inesperado ocorreu!"));
+        }
+
     }
 
     [HttpGet("v1/categories/{id:int}")]
@@ -28,14 +37,23 @@ public class CategoryController : ControllerBase
     }
 
     [HttpPost("v1/categories")]
-    public async Task<IActionResult> PostAsync([FromBody] Category model, [FromServices] BlogDataContext context)
+    public async Task<IActionResult> PostAsync([FromBody] EditorCategoryViewModel model, [FromServices] BlogDataContext context)
     {
         try
         {
-            await context.Categories.AddAsync(model);
+            if (!ModelState.IsValid)
+                return BadRequest();
+
+            var category = new Category
+            {
+                Id = 0,
+                Name = model.Name,
+                Slug = model.Slug.ToLower()
+            };
+            await context.Categories.AddAsync(category);
             await context.SaveChangesAsync();
 
-            return Created($"v1/categories/{model.Id}", model);
+            return Created($"v1/categories/{category.Id}", category);
         }
         catch (DbUpdateException ex)
         {
@@ -49,7 +67,7 @@ public class CategoryController : ControllerBase
 
     [HttpPut("v1/categories/{id:int}")]
     public async Task<IActionResult> PutAsync(int id,
-                                                    [FromBody] Category model,
+                                                    [FromBody] EditorCategoryViewModel model,
                                                     [FromServices] BlogDataContext context)
     {
         try
@@ -61,7 +79,7 @@ public class CategoryController : ControllerBase
                 return NotFound();
 
             category.Name = model.Name;
-            category.Slug = model.Slug;
+            category.Slug = model.Slug.ToLower();
 
             context.Categories.Update(category);
             await context.SaveChangesAsync();
