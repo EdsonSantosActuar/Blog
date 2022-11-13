@@ -1,4 +1,5 @@
 using Blog.Data;
+using Blog.Extensions;
 using Blog.Models;
 using Blog.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -27,23 +28,31 @@ public class CategoryController : ControllerBase
     [HttpGet("v1/categories/{id:int}")]
     public async Task<IActionResult> GetByIdAsync(int id, [FromServices] BlogDataContext context)
     {
-        var category = await context.Categories
-            .FirstOrDefaultAsync(x => x.Id == id);
+        try
+        {
+            var category = await context.Categories
+                .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (category is null)
-            return NotFound();
+            if (category is null)
+                return NotFound(new ResultViewModel<Category>("Conteúdo não encontrado!"));
 
-        return Ok(category);
+            return Ok(new ResultViewModel<Category>(category));
+        }
+        
+        catch
+        {
+            return StatusCode(500, new ResultViewModel<Category>("05X02 - Um erro inesperado ocorreu!"));
+        }
     }
 
     [HttpPost("v1/categories")]
     public async Task<IActionResult> PostAsync([FromBody] EditorCategoryViewModel model, [FromServices] BlogDataContext context)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(new ResultViewModel<Category>(ModelState.GetErrors()));
+
         try
         {
-            if (!ModelState.IsValid)
-                return BadRequest();
-
             var category = new Category
             {
                 Id = 0,
@@ -53,15 +62,15 @@ public class CategoryController : ControllerBase
             await context.Categories.AddAsync(category);
             await context.SaveChangesAsync();
 
-            return Created($"v1/categories/{category.Id}", category);
+            return Created($"v1/categories/{category.Id}", new ResultViewModel<Category>(category));
         }
         catch (DbUpdateException ex)
         {
-            return StatusCode(500, "05XE9 - Não foi possível incluir a categoria.");
+            return StatusCode(500, new ResultViewModel<Category>("05X09 - Um erro inesperado ocorreu!"));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, "05X10 - Um erro inesperado ocorreu!");
+            return StatusCode(500, new ResultViewModel<Category>("05X10 - Um erro inesperado ocorreu!"));
         }
     }
 
@@ -76,7 +85,7 @@ public class CategoryController : ControllerBase
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (category is null)
-                return NotFound();
+                return NotFound(new ResultViewModel<Category>("Conteúdo não encontrado!"));
 
             category.Name = model.Name;
             category.Slug = model.Slug.ToLower();
@@ -84,15 +93,15 @@ public class CategoryController : ControllerBase
             context.Categories.Update(category);
             await context.SaveChangesAsync();
 
-            return Ok(category);
+            return Ok(new ResultViewModel<Category>(category));
         }
         catch (DbUpdateException ex)
         {
-            return StatusCode(500, "05XE8 - Não foi possível incluir a categoria.");
+            return StatusCode(500, new ResultViewModel<Category>("05XE8 - Não foi possível incluir a categoria."));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, "05X11 - Um erro inesperado ocorreu!");
+            return StatusCode(500, new ResultViewModel<Category>("05X11 - Um erro inesperado ocorreu!"));
         }
 
 
@@ -107,7 +116,7 @@ public class CategoryController : ControllerBase
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (category is null)
-                return NotFound();
+                return NotFound(new ResultViewModel<Category>("Conteúdo não encontrado!"));
 
             context.Categories.Remove(category);
             await context.SaveChangesAsync();
@@ -116,11 +125,11 @@ public class CategoryController : ControllerBase
         }
         catch (DbUpdateException ex)
         {
-            return StatusCode(500, "05XE7 - Não foi possível incluir a categoria.");
+            return StatusCode(500, new ResultViewModel<Category>("05XE7 - Não foi possível incluir a categoria."));
         }
         catch (Exception ex)
         {
-            return StatusCode(500, "05X12 - Um erro inesperado ocorreu!");
+            return StatusCode(500, new ResultViewModel<Category>("05X12 - Um erro inesperado ocorreu!"));
         }
     }
 }
