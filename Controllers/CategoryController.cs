@@ -2,6 +2,7 @@ using Blog.Data;
 using Blog.Extensions;
 using Blog.Models;
 using Blog.ViewModels;
+using Blog.ViewModels.Categories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -76,8 +77,8 @@ public class CategoryController : ControllerBase
 
     [HttpPut("v1/categories/{id:int}")]
     public async Task<IActionResult> PutAsync(int id,
-                                                    [FromBody] EditorCategoryViewModel model,
-                                                    [FromServices] BlogDataContext context)
+                                              [FromBody] EditorCategoryViewModel model,
+                                              [FromServices] BlogDataContext context)
     {
         try
         {
