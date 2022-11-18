@@ -6,51 +6,20 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
-
-LoadServiceToken(builder);
-LoadServices(builder);
+ConfigureAuthentication(builder);
+ConfigureMvc(builder);
+ConfigureServices(builder);
 
 var app = builder.Build();
-
 LoadConfiguration(app);
 
-app.MapControllers();
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.MapControllers();
+app.UseStaticFiles();
 app.Run();
 
-void LoadServices(WebApplicationBuilder builder)
-{
-    builder.Services.AddDbContext<BlogDataContext>();
-    builder.Services.AddTransient<TokenService>();
-}
 
-void LoadServiceToken(WebApplicationBuilder builder)
-{
-    var key = Encoding.ASCII.GetBytes(Configuration.JwtKey);
-    builder.Services.AddAuthentication(x =>
-    {
-        x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    }).AddJwtBearer(x =>
-                        {
-                            x.TokenValidationParameters = new TokenValidationParameters
-                            {
-                                ValidateIssuerSigningKey = true,
-                                IssuerSigningKey = new SymmetricSecurityKey(key),
-                                ValidateIssuer = false,
-                                ValidateAudience = false
-                            };
-                        });
-
-    builder.Services
-        .AddControllers()
-        .ConfigureApiBehaviorOptions(options =>
-        {
-            options.SuppressModelStateInvalidFilter = true;
-        });
-}
 
 void LoadConfiguration(WebApplication app)
 {
@@ -61,4 +30,40 @@ void LoadConfiguration(WebApplication app)
     var smtp = new Configuration.SmtpConfiguration();
     app.Configuration.GetSection("Smtp").Bind(smtp);
     Configuration.Smtp = smtp;
+}
+
+void ConfigureAuthentication(WebApplicationBuilder builder)
+{
+    var key = Encoding.ASCII.GetBytes(Configuration.JwtKey);
+    builder.Services.AddAuthentication(x =>
+    {
+        x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    }).AddJwtBearer(x =>
+    {
+        x.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+}
+
+void ConfigureMvc(WebApplicationBuilder builder)
+{
+    builder.Services
+            .AddControllers()
+            .ConfigureApiBehaviorOptions(options =>
+            {
+                options.SuppressModelStateInvalidFilter = true;
+            });
+}
+
+void ConfigureServices(WebApplicationBuilder builder)
+{
+    builder.Services.AddDbContext<BlogDataContext>();
+    builder.Services.AddTransient<TokenService>();
+    builder.Services.AddTransient<EmailService>();
 }
